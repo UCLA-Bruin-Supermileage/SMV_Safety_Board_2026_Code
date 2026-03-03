@@ -45,7 +45,7 @@ CAN_HandleTypeDef hcan1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+CANBUS can1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,13 +94,27 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-
+  can1 = CAN_new(); // construct a CAN object
+  can1.init(&can1, Safety, &hcan1); // methods require pointers to self because C has no "this" pointer
+  can1.addFilterDeviceData(&can1, UI, Motor);
+  can1.begin(&can1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  if (can1.getHardwareRaw(&can1) == UI) {
+		  if (can1.getDataTypeRaw(&can1) == Motor) {
+			  if (can1.getData(&can1) > 0.5) {
+
+			  }
+			  else {
+
+			  }
+		  }
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

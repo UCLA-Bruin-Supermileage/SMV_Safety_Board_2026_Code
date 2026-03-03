@@ -6,49 +6,55 @@
 // every time you send a message, pick the appropriate data type for that message.
 
 enum devices {
-    Safety,
+    Bear_1,
     UI,
+    HS1,
+    HS2,
+    HS3,
+    HS4,
     FC,
-    RC,
-    Motor_Controller,
     Joule_H,
     Joule_L,
+    Safety,
     DAQ_Board
 };
 
 enum motorMessage {
-    Hall_Velocity,
-    Motor_Torque,
-    Motor_Current,
+    Hall_velocity,
+    Torque_motor,
+    Current,
     Board_Temp,
     Motor_Temp,
 };
 
 enum UIMessage {
-    Emergency_Stop,
-    Supercap_Discharge,
     Blink_Left,
     Blink_Right,
     Reverse,
     Headlights,
     Wipers,
-    Horn,
     Hazard,
-    Spare_Button,
-    Spare_Switch,
-    Regen,
+    Button,
+    Switch,
+    Motor,
+    Horn,
     DAQ_Button
+};
+
+enum HSMessage {
+    Gyro_x,
+    Gyro_y,
+    Gyro_z,
+    Accel_x,
+    Accel_y,
+    Accel_z,
+    Pressure,
+    Torque_HS
 };
 
 enum FCMessage {
     Gas,
-    Brake,
-    FC_Pressure
-};
-
-enum RCMessage{
-    RC_Pressure,
-    RC_Torque
+    Brake
 };
 
 enum JouleMessage {
@@ -58,7 +64,7 @@ enum JouleMessage {
 enum DAQMessage {
     Longitude,
     Latitude,
-    Altitude
+    Speed
 };
 
 #endif
