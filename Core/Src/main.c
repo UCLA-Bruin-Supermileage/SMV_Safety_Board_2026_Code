@@ -46,6 +46,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 CANBUS can1;
+volatile uint8_t hydrogen_status_flag = 0;
+volatile uint8_t optocoupler_status_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,10 +96,15 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
+
+  // CAN init
   can1 = CAN_new(); // construct a CAN object
   can1.init(&can1, Safety, &hcan1); // methods require pointers to self because C has no "this" pointer
   can1.addFilterDeviceData(&can1, UI, Motor);
   can1.begin(&can1);
+
+  // Set ignition to off initially
+  HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -108,10 +115,10 @@ int main(void)
 	  if (can1.getHardwareRaw(&can1) == UI) {
 		  if (can1.getDataTypeRaw(&can1) == Motor) {
 			  if (can1.getData(&can1) > 0.5) {
-
+				  HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_SET);
 			  }
 			  else {
-
+				  HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
 			  }
 		  }
 	  }
@@ -303,7 +310,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
+}
 /* USER CODE END 4 */
 
 /**
