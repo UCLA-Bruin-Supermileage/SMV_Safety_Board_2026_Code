@@ -125,11 +125,17 @@ int main(void)
 
 	  if (hydrogen_status_flag) {
 		  // TODO: do something with Hydrogen_Output
+		  // (will be delayed by while loop, put in interrupt if need immediate response)
 	  }
 
 	  if (optocoupler_status_flag) {
 		  // interrupt already stops ignition
-		  // TODO: do something else with optocoupler output that can be delayed
+		  // TODO: do something else with optocoupler output
+		  // (will be delayed by while loop, put in interrupt if need immediate response)
+	  }
+
+	  if (HAL_GPIO_ReadPin(relay_output_GPIO_Port, relay_output_Pin) == GPIO_PIN_RESET) {
+		  // TODO: do something with relay output
 	  }
     /* USER CODE END WHILE */
 
@@ -273,7 +279,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, ignition_signal_Pin|LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -293,8 +299,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(optocoupler_output_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA0 LD2_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|LD2_Pin;
+  /*Configure GPIO pins : ignition_signal_Pin LD2_Pin */
+  GPIO_InitStruct.Pin = ignition_signal_Pin|LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -303,7 +309,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : relay_output_Pin */
   GPIO_InitStruct.Pin = relay_output_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(relay_output_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
@@ -321,6 +327,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
+	// check which pin
 	if (GPIO_Pin == Hydrogen_Output_Pin) {
 		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_SET) {
 			hydrogen_status_flag == 1; // was low, now high
@@ -333,7 +340,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		// goes low = on(status flag is 1)
 		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_RESET) {
 			optocoupler_status_flag == 1;
-			// !!! cuts ignition immediately !!!
+			// !!! cut ignition immediately !!!
 			HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
 		}
 		else {

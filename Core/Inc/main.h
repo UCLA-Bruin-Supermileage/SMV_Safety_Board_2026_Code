@@ -66,6 +66,8 @@ void Error_Handler(void);
 #define optocoupler_output_Pin GPIO_PIN_0
 #define optocoupler_output_GPIO_Port GPIOC
 #define optocoupler_output_EXTI_IRQn EXTI0_IRQn
+#define ignition_signal_Pin GPIO_PIN_0
+#define ignition_signal_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
