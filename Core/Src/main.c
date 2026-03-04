@@ -122,6 +122,15 @@ int main(void)
 			  }
 		  }
 	  }
+
+	  if (hydrogen_status_flag) {
+		  // TODO: do something with Hydrogen_Output
+	  }
+
+	  if (optocoupler_status_flag) {
+		  // interrupt already stops ignition
+		  // TODO: do something else with optocoupler output that can be delayed
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -280,7 +289,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : optocoupler_output_Pin */
   GPIO_InitStruct.Pin = optocoupler_output_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(optocoupler_output_GPIO_Port, &GPIO_InitStruct);
 
@@ -311,6 +320,26 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+
+	if (GPIO_Pin == Hydrogen_Output_Pin) {
+		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_SET) {
+			hydrogen_status_flag == 1; // was low, now high
+		}
+		else {
+			hydrogen_status_flag == 0; // was high, now low
+		}
+	}
+	else if (GPIO_Pin == optocoupler_output_Pin) {
+		// goes low = on(status flag is 1)
+		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_RESET) {
+			optocoupler_status_flag == 1;
+			// !!! cuts ignition immediately !!!
+			HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
+		}
+		else {
+			optocoupler_status_flag == 0;
+		}
+	}
 
 }
 /* USER CODE END 4 */
