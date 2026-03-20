@@ -1,19 +1,14 @@
-# SMV_UI_TestBench
+# SMV_Safety_Board
 
-This is the test bench for the Safety Board, currently untested.
-
-### Automatic Setup
-
-To setup, clone this repo.
+This board is currently untested.
 
 ### Code Explanation
 
 The main functions of the UI Board inclue:
 
-1. When recieve Motor message from UI Board via CAN, send ignition signal
-2. When optocoupler_output goes low, kill ignition signal (using interrupt for immediate response)
-3. Read optocopuler, hydrogen, and relay output
-
+1. Turn Motor on/off in response to UI Board Motor switch
+2. When Optocoupler is pressed, kill ignition signal (re-ignition requires restarting motor from UI Board)
+4. When Hydrogen is detected, kill ignition signal and freeze execution (re-ignition requires restarting the Low Voltage system or resetting the Safety Board STM32)
 
 
 ## Pin Assignment Info
