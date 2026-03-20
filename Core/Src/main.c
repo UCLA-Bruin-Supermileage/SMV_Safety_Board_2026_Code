@@ -21,7 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "smv_canbus.h"
+#include "stdbool.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,8 +48,11 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 CANBUS can1;
-volatile uint8_t hydrogen_status_flag = 0;
 volatile uint8_t optocoupler_status_flag = 0;
+static volatile double CAN_val = 0;
+static volatile int CAN_sender = 0;
+static volatile int CAN_type = 0;
+static char CAN_type_string [20] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,7 +66,69 @@ static void MX_CAN1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
 
+{
+    /* Get RX message from FIFO0 and fill the data on the related FIFO0 user declared header
+       (RxHeaderFIFO0) and table (RxDataFIFO0) */
+    if (HAL_CAN_GetRxMessage(CanHandle, CAN_RX_FIFO0, &(can1.RxHeaderFIFO0), can1.RxDataFIFO0) != HAL_OK)
+    {
+        /* Reception Error */
+       Error_Handler();
+    }else{
+    	CAN_Interrupt_Helper(&can1);
+
+    	CAN_sender = can1.getHardwareRaw(&can1);
+    	CAN_type = can1.getDataTypeRaw(&can1);
+    	strcpy(CAN_type_string, can1.getDataType(&can1)); //DEBUG Code
+    	CAN_val = can1.getData(&can1);
+
+    	//Motor ON/OFF from UI Board
+    	if (CAN_sender == UI && CAN_type == Motor){
+    		HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, CAN_val > 0.5 ? GPIO_PIN_SET: GPIO_PIN_RESET);
+    	}
+    }
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	/*
+	 * HYDROGEN SENSOR STOP:
+	 * 1. Hydrogen Output pin goes LOW --> Ignition pin is set to LOW and execution enters the infinite loop Error Handler
+	 * 2a. Re-ignition Protocol: Restart Low Voltage system or Reset STM32 on Safety Board
+	 *
+	 * 2b. Alternate Re-Ignition Protocol (Unimplemented): Driver sets UI Board Motor switch from OFF to ON (resend Ignition signal)
+	 */
+
+	if (GPIO_Pin == Hydrogen_Output_Pin) {
+		__disable_irq();
+		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_RESET) {
+			HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
+			Error_Handler();
+		}
+	}
+	/*
+	 * E-STOP:
+	 * 1. Octocooupler is pressed --> Ignition pin is set to LOW
+	 * 2a. Re-ignition Protocol: Driver sets UI Board Motor switch from OFF to ON (resend Ignition signal)
+	 *
+	 * 2b. Alternate Re-Ignition Protocol (Unimplemented): Pressing the Octocoupler sets Ignition to LOW and enters the infinite loop Error Handler;
+	 * Restart Low Voltage system or Reset STM32 on Safety Board
+	 */
+	else if (GPIO_Pin == optocoupler_output_Pin) {
+		__disable_irq();
+		// goes low = on(status flag is 1)
+		if (HAL_GPIO_ReadPin(optocoupler_output_GPIO_Port, optocoupler_output_Pin) == GPIO_PIN_RESET) {
+			optocoupler_status_flag == 1;
+			// !!! cut ignition immediately !!!
+			HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
+		}
+		else {
+			optocoupler_status_flag == 0;
+		}
+		__enable_irq();
+	}
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -104,29 +171,17 @@ int main(void)
   can1.begin(&can1);
 
   // Set ignition to off initially
-  HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  if (can1.getHardwareRaw(&can1) == UI) {
-		  if (can1.getDataTypeRaw(&can1) == Motor) {
-			  if (can1.getData(&can1) > 0.5) {
-				  HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_SET);
-			  }
-			  else {
-				  HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
-			  }
-		  }
-	  }
-
-	  if (hydrogen_status_flag) {
-		  // TODO: do something with Hydrogen_Output
-		  // (will be delayed by while loop, put in interrupt if need immediate response)
-	  }
+//	  if (hydrogen_status_flag) {
+//		  // TODO: do something with Hydrogen_Output
+//		  // (will be delayed by while loop, put in interrupt if need immediate response)
+//	  }
 
 	  if (optocoupler_status_flag) {
 		  // interrupt already stops ignition
@@ -325,30 +380,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
-	// check which pin
-	if (GPIO_Pin == Hydrogen_Output_Pin) {
-		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_SET) {
-			hydrogen_status_flag == 1; // was low, now high
-		}
-		else {
-			hydrogen_status_flag == 0; // was high, now low
-		}
-	}
-	else if (GPIO_Pin == optocoupler_output_Pin) {
-		// goes low = on(status flag is 1)
-		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_RESET) {
-			optocoupler_status_flag == 1;
-			// !!! cut ignition immediately !!!
-			HAL_GPIO_WritePin(Ignition_GPIO_Port, Ignition_Pin, GPIO_PIN_RESET);
-		}
-		else {
-			optocoupler_status_flag == 0;
-		}
-	}
-
-}
 /* USER CODE END 4 */
 
 /**
