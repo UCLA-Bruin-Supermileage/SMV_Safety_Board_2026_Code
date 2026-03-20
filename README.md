@@ -7,8 +7,8 @@ This board is currently untested.
 The main functions of the UI Board inclue:
 
 1. Turn Motor on/off in response to UI Board Motor switch
-2. When Optocoupler is pressed, kill ignition signal (re-ignition requires restarting motor from UI Board)
-4. When Hydrogen is detected, kill ignition signal and freeze execution (re-ignition requires restarting the Low Voltage system or resetting the Safety Board STM32)
+2. When Optocoupler is pressed, kill ignition signal and freeze execution (re-ignition requires resetting the Safety Board STM32)
+4. When Hydrogen is detected, kill ignition signal and freeze execution (re-ignition requires resetting the Safety Board STM32)
 
 
 ## Pin Assignment Info

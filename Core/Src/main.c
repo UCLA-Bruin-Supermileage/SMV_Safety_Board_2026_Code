@@ -49,6 +49,7 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 CANBUS can1;
 volatile uint8_t optocoupler_status_flag = 0;
+volatile uint8_t hydrogen_status_flag = 0;
 static volatile double CAN_val = 0;
 static volatile int CAN_sender = 0;
 static volatile int CAN_type = 0;
@@ -79,7 +80,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
 
     	CAN_sender = can1.getHardwareRaw(&can1);
     	CAN_type = can1.getDataTypeRaw(&can1);
-    	strcpy(CAN_type_string, can1.getDataType(&can1)); //DEBUG Code
+    	//strcpy(CAN_type_string, can1.getDataType(&can1)); //DEBUG Code
     	CAN_val = can1.getData(&can1);
 
     	//Motor ON/OFF from UI Board
@@ -90,41 +91,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	/*
-	 * HYDROGEN SENSOR STOP:
-	 * 1. Hydrogen Output pin goes LOW --> Ignition pin is set to LOW and execution enters the infinite loop Error Handler
-	 * 2a. Re-ignition Protocol: Restart Low Voltage system or Reset STM32 on Safety Board
-	 *
-	 * 2b. Alternate Re-Ignition Protocol (Unimplemented): Driver sets UI Board Motor switch from OFF to ON (resend Ignition signal)
-	 */
-
+	 // HYDROGEN SENSOR STOP:
 	if (GPIO_Pin == Hydrogen_Output_Pin) {
-		__disable_irq();
 		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_RESET) {
-			HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
+			hydrogen_status_flag = 1;
 			Error_Handler();
 		}
 	}
-	/*
-	 * E-STOP:
-	 * 1. Octocooupler is pressed --> Ignition pin is set to LOW
-	 * 2a. Re-ignition Protocol: Driver sets UI Board Motor switch from OFF to ON (resend Ignition signal)
-	 *
-	 * 2b. Alternate Re-Ignition Protocol (Unimplemented): Pressing the Octocoupler sets Ignition to LOW and enters the infinite loop Error Handler;
-	 * Restart Low Voltage system or Reset STM32 on Safety Board
-	 */
+	// E-STOP:
 	else if (GPIO_Pin == optocoupler_output_Pin) {
-		__disable_irq();
 		// goes low = on(status flag is 1)
 		if (HAL_GPIO_ReadPin(optocoupler_output_GPIO_Port, optocoupler_output_Pin) == GPIO_PIN_RESET) {
-			optocoupler_status_flag == 1;
-			// !!! cut ignition immediately !!!
-			HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
+			optocoupler_status_flag = 1;
+			Error_Handler();
 		}
-		else {
-			optocoupler_status_flag == 0;
-		}
-		__enable_irq();
 	}
 
 }
@@ -353,8 +333,10 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
   while (1)
   {
+
   }
   /* USER CODE END Error_Handler_Debug */
 }
