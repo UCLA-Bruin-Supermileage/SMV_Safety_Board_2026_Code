@@ -149,12 +149,22 @@ int main(void)
 
   // Set ignition to off initially
   HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
+
+  // LED blink
+  const uint32_t led_blink_interval = 500;
+  uint32_t last_toggle = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uint32_t cur_tick = HAL_GetTick();
+	  if ((cur_tick - last_toggle) > led_blink_interval) {
+		  last_toggle = cur_tick;
+		  HAL_GPIO_TogglePin(GPIOA, LD2_Pin);
+	  }
+
 //	  if (hydrogen_status_flag) {
 //		  // TODO: do something with Hydrogen_Output
 //		  // (will be delayed by while loop, put in interrupt if need immediate response)
