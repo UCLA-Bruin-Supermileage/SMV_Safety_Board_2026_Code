@@ -101,7 +101,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	// E-STOP:
 	else if (GPIO_Pin == optocoupler_output_Pin) {
 		// goes low = on(status flag is 1)
-		if (HAL_GPIO_ReadPin(optocoupler_output_GPIO_Port, optocoupler_output_Pin) == GPIO_PIN_RESET) {
+		if (HAL_GPIO_ReadPin(optocoupler_output_GPIO_Port, optocoupler_output_Pin) == GPIO_PIN_SET) {
 			optocoupler_status_flag = 1;
 			Error_Handler();
 		}
@@ -149,6 +149,7 @@ int main(void)
 
   // Set ignition to off initially
   HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_RESET);
+  //HAL_GPIO_WritePin(ignition_signal_GPIO_Port, ignition_signal_Pin, GPIO_PIN_SET); // dbg
 
   // LED blink
   const uint32_t led_blink_interval = 500;
