@@ -60,3 +60,4 @@ release
 .Trashes
 ehthumbs.db
 Thumbs.db
+*.launch

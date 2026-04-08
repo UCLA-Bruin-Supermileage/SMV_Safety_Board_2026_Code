@@ -60,6 +60,7 @@ static char CAN_type_string [20] = {0};
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_CAN1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -91,15 +92,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	 // HYDROGEN SENSOR STOP:
-	if (GPIO_Pin == Hydrogen_Output_Pin) {
-		if (HAL_GPIO_ReadPin(Hydrogen_Output_GPIO_Port, Hydrogen_Output_Pin) == GPIO_PIN_RESET) {
-			hydrogen_status_flag = 1;
-			Error_Handler();
-		}
-	}
+
 	// E-STOP:
-	else if (GPIO_Pin == optocoupler_output_Pin) {
+	 if (GPIO_Pin == optocoupler_output_Pin) {
 		// goes low = on(status flag is 1)
 		if (HAL_GPIO_ReadPin(optocoupler_output_GPIO_Port, optocoupler_output_Pin) == GPIO_PIN_SET) {
 			optocoupler_status_flag = 1;
@@ -139,6 +134,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART2_UART_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 
   // CAN init
@@ -170,16 +167,11 @@ int main(void)
 //		  // TODO: do something with Hydrogen_Output
 //		  // (will be delayed by while loop, put in interrupt if need immediate response)
 //	  }
+	  if (HAL_GPIO_ReadPin(h22_GPIO_Port, h22_Pin) == GPIO_PIN_RESET) {
+			hydrogen_status_flag = 1;
+			Error_Handler();
+		}
 
-	  if (optocoupler_status_flag) {
-		  // interrupt already stops ignition
-		  // TODO: do something else with optocoupler output
-		  // (will be delayed by while loop, put in interrupt if need immediate response)
-	  }
-
-	  if (HAL_GPIO_ReadPin(relay_output_GPIO_Port, relay_output_Pin) == GPIO_PIN_RESET) {
-		  // TODO: do something with relay output
-	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -233,6 +225,42 @@ void SystemClock_Config(void)
   }
 }
 
+/**
+  * @brief CAN1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CAN1_Init(void)
+{
+
+  /* USER CODE BEGIN CAN1_Init 0 */
+
+  /* USER CODE END CAN1_Init 0 */
+
+  /* USER CODE BEGIN CAN1_Init 1 */
+
+  /* USER CODE END CAN1_Init 1 */
+  hcan1.Instance = CAN1;
+  hcan1.Init.Prescaler = 16;
+  hcan1.Init.Mode = CAN_MODE_NORMAL;
+  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan1.Init.TimeSeg1 = CAN_BS1_1TQ;
+  hcan1.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan1.Init.TimeTriggeredMode = DISABLE;
+  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoWakeUp = DISABLE;
+  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.ReceiveFifoLocked = DISABLE;
+  hcan1.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CAN1_Init 2 */
+
+  /* USER CODE END CAN1_Init 2 */
+
+}
 
 /**
   * @brief USART2 Initialization Function
@@ -294,12 +322,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Hydrogen_Output_Pin */
-  GPIO_InitStruct.Pin = Hydrogen_Output_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(Hydrogen_Output_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : optocoupler_output_Pin */
   GPIO_InitStruct.Pin = optocoupler_output_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
@@ -313,6 +335,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : h22_Pin */
+  GPIO_InitStruct.Pin = h22_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(h22_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : relay_output_Pin */
   GPIO_InitStruct.Pin = relay_output_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -322,9 +350,6 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
